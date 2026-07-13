@@ -1,7 +1,7 @@
-region              = "us-east-1"
-environment         = "stg"
-cluster_name        = "landmark-cluster"
-kubernetes_version  = "1.32"
+region             = "us-east-1"
+environment        = "stg"
+cluster_name       = "landmark-cluster"
+kubernetes_version = "1.32"
 
 # VPC
 vpc_cidr             = "10.1.0.0/16"
@@ -21,5 +21,4 @@ app_bucket_name = "landmark-app-bucket"
 # RDS
 db_name           = "employees"
 db_username       = "landmark_admin"
-db_password       = "ChangeMe123!"
 db_instance_class = "db.t3.small"
