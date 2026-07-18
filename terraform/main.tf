@@ -71,7 +71,7 @@ module "eks" {
   # Managed Node Group with ASG
   eks_managed_node_groups = {
     main = {
-      name           = "${var.cluster_name}-${var.environment}"
+      name           = "employee-node-${var.environment}"
       instance_types = var.node_instance_types
       desired_size   = var.node_desired_size
       min_size       = var.node_min_size
