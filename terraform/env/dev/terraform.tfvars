@@ -1,6 +1,6 @@
 region             = "us-east-1"
 environment        = "dev"
-cluster_name       = "landmark-cluster"
+cluster_name       = "employee-platform-cluster"
 kubernetes_version = "1.32"
 
 # VPC
@@ -16,9 +16,9 @@ node_min_size       = 1
 node_max_size       = 3
 
 # S3
-app_bucket_name = "landmark-app-bucket"
+app_bucket_name = "employee-platform-bucket"
 
 # RDS
 db_name           = "employees"
-db_username       = "landmark_admin"
+db_username       = "employee_admin"
 db_instance_class = "db.t3.micro"

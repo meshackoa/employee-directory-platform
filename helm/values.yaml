@@ -1,13 +1,13 @@
 # Backend configuration
 backend:
-  image: 075120018043.dkr.ecr.us-east-1.amazonaws.com/employee-backend
+  image: 381155823715.dkr.ecr.us-east-1.amazonaws.com/employee-backend
   tag: be-dev-20260710-013631
   replicas: 2
   port: 5000
 
 # Frontend configuration
 frontend:
-  image: 075120018043.dkr.ecr.us-east-1.amazonaws.com/employee-frontend
+  image: 381155823715.dkr.ecr.us-east-1.amazonaws.com/employee-frontend
   tag: fe-dev-20260710-013631
   replicas: 2
   port: 80
@@ -15,11 +15,11 @@ frontend:
 # Service Account for S3 + Secrets Manager access
 serviceAccount:
   name: app-sa
-  roleArn: "arn:aws:iam::075120018043:role/landmark-cluster-dev-app-sa"
+  roleArn: "arn:aws:iam::381155823715:role/employee-platform-cluster-dev-app-sa"
 
 # External Secrets - AWS Secrets Manager
 externalSecrets:
-  secretName: "landmark-cluster-dev/employee-app"
+  secretName: "employee-platform-cluster-dev/employee-app"
   refreshInterval: "1m"
 
 # Ingress via ALB
@@ -29,12 +29,12 @@ ingress:
 
 # S3 bucket
 s3:
-  bucket: "landmark-app-bucket-dev"
+  bucket: "employee-platform-bucket-dev"
   region: "us-east-1"
 
 # CloudWatch Logging
 logging:
-  logGroup: "/landmark/employee-app"
+  logGroup: "/employee-platform/app"
   environment: "dev"
 
 # Monitoring - kube-prometheus-stack
@@ -67,10 +67,10 @@ kube-prometheus-stack:
           defaultRegion: us-east-1
           logGroups:
             - arn: ""
-              name: /landmark/employee-app
+              name: /employee-platform/app
     serviceAccount:
       annotations:
-        eks.amazonaws.com/role-arn: "arn:aws:iam::075120018043:role/landmark-cluster-dev-app-sa"
+        eks.amazonaws.com/role-arn: "arn:aws:iam::381155823715:role/employee-platform-cluster-dev-app-sa"
   prometheus:
     prometheusSpec:
       serviceMonitorSelectorNilUsesHelmValues: false

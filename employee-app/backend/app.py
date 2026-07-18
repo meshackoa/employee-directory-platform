@@ -12,8 +12,8 @@ from prometheus_flask_exporter import PrometheusMetrics
 
 # --- Configuration ---
 AWS_REGION = os.environ.get("AWS_REGION", "us-east-1")
-S3_BUCKET = os.environ.get("S3_BUCKET", "landmark-app-bucket-dev")
-LOG_GROUP = os.environ.get("LOG_GROUP", "/landmark/employee-app")
+S3_BUCKET = os.environ.get("S3_BUCKET", "employee-platform-bucket-dev")
+LOG_GROUP = os.environ.get("LOG_GROUP", "/employee-platform/app")
 ENVIRONMENT = os.environ.get("ENVIRONMENT", "dev")
 
 # --- App Setup ---
@@ -43,7 +43,7 @@ stdout_handler.setFormatter(logging.Formatter(
 ))
 logger.addHandler(stdout_handler)
 
-# CloudWatch handler - streams to /landmark/employee-app log group
+# CloudWatch handler - streams to /employee-platform/app log group
 try:
     cw_handler = watchtower.CloudWatchLogHandler(
         log_group_name=LOG_GROUP,

@@ -3,7 +3,7 @@ module "vpc" {
   source  = "terraform-aws-modules/vpc/aws"
   version = "5.16.0"
 
-  name = "landmark-vpc-${var.environment}"
+  name = "employee-platform-vpc-${var.environment}"
   cidr = var.vpc_cidr
 
   azs             = var.availability_zones

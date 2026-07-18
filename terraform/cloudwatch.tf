@@ -1,6 +1,6 @@
 # CloudWatch Log Group for the application
 resource "aws_cloudwatch_log_group" "app" {
-  name              = "/landmark/employee-app"
+  name              = "/employee-platform/app"
   retention_in_days = 14
 
   tags = {
