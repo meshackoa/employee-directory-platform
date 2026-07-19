@@ -1,15 +1,15 @@
 # Backend configuration
 backend:
   image: 381155823715.dkr.ecr.us-east-1.amazonaws.com/employee-backend
-  tag: be-dev-20260710-013631
-  replicas: 2
+  tag: be-dev-20260718-001
+  replicas: 1
   port: 5000
 
 # Frontend configuration
 frontend:
   image: 381155823715.dkr.ecr.us-east-1.amazonaws.com/employee-frontend
-  tag: fe-dev-20260710-013631
-  replicas: 2
+  tag: fe-dev-20260718-001
+  replicas: 1
   port: 80
 
 # Service Account for S3 + Secrets Manager access
@@ -39,7 +39,7 @@ logging:
 
 # Monitoring - kube-prometheus-stack
 monitoring:
-  enabled: true
+  enabled: false
 
 kube-prometheus-stack:
   alertmanager:
