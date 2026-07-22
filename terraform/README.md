@@ -1,11 +1,11 @@
 # Terraform - All Infrastructure
 
 ## What's Deployed
-- **VPC**: `landmark-vpc-<env>` with public/private subnets across multiple AZs
-- **EKS**: `landmark-cluster-<env>` in private subnets with managed node group (ASG)
-- **RDS**: `landmark-db-<env>` PostgreSQL in private subnets
+- **VPC**: `employee-platform-vpc-<env>` with public/private subnets across multiple AZs
+- **EKS**: `employee-platform-cluster-<env>` in private subnets with managed node group (ASG)
+- **RDS**: `employee-platform-db-<env>` PostgreSQL in private subnets
 - **ECR**: `employee-backend` and `employee-frontend` repositories
-- **S3**: `landmark-app-bucket-<env>` for application use
+- **S3**: `employee-platform-bucket-<env>` for application use
 - **IAM**: IRSA roles for LB controller and S3 access
 - **CloudWatch**: All EKS control plane logs
 

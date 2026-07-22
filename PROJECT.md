@@ -53,7 +53,7 @@
 │  │  └──────────┘ └──────────┘      └──────────┘ └────────┘│    │
 │  └──────────────────────────────────────────────────────────┘    │
 │                                                                  │
-│  ┌─── EKS Cluster (landmark-cluster-dev) ───────────────────┐   │
+│  ┌─── EKS Cluster (employee-platform-cluster-dev) ───────────────────┐   │
 │  │  Pods: backend(2) + frontend(2) + prometheus + grafana    │   │
 │  │  + node-exporter(2) + kube-state-metrics + operator       │   │
 │  └───────────────────────────────────────────────────────────┘   │
@@ -70,7 +70,7 @@
 
 ### State Management
 
-S3 backend (`landmark-terraform-state-file`) with versioning enabled for state recovery.
+S3 backend (`employee-platform-terraform-state`) with versioning enabled for state recovery.
 
 ### Environment Separation
 
@@ -126,7 +126,7 @@ Three pillars covered:
 
 ### Logs (CloudWatch + Grafana)
 
-- Structured JSON logs from backend → CloudWatch log group `/landmark/employee-app`
+- Structured JSON logs from backend → CloudWatch log group `/employee-platform/employee-app`
 - Grafana CloudWatch datasource with Logs Insights queries
 - Dashboard panels: request rate from logs, avg response time, error rate, slowest requests, endpoint breakdown
 
