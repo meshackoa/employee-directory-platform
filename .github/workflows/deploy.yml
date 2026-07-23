@@ -3,6 +3,7 @@ name: Build and Deploy
 on:
   push:
     branches: [main]
+
   workflow_dispatch:
     inputs:
       environment:
@@ -18,6 +19,10 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -43,9 +48,15 @@ jobs:
     runs-on: ubuntu-latest
     needs: [test]
     environment: ${{ github.event.inputs.environment || 'development' }}
+
+    permissions:
+      contents: read
+      id-token: write
+
     outputs:
       backend_tag: ${{ steps.tag.outputs.backend_tag }}
       frontend_tag: ${{ steps.tag.outputs.frontend_tag }}
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -54,69 +65,118 @@ jobs:
         id: tag
         run: |
           TIMESTAMP=$(date +'%Y%m%d-%H%M%S')
-          echo "backend_tag=be-${{ github.event.inputs.environment || 'dev' }}-${TIMESTAMP}" >> $GITHUB_OUTPUT
-          echo "frontend_tag=fe-${{ github.event.inputs.environment || 'dev' }}-${TIMESTAMP}" >> $GITHUB_OUTPUT
+          ENVIRONMENT="${{ github.event.inputs.environment || 'development' }}"
+          echo "backend_tag=be-${ENVIRONMENT}-${TIMESTAMP}" >> "$GITHUB_OUTPUT"
+          echo "frontend_tag=fe-${ENVIRONMENT}-${TIMESTAMP}" >> "$GITHUB_OUTPUT"
 
-      - name: Configure AWS credentials
+      - name: Configure AWS credentials using OIDC
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          role-session-name: GitHubActions-Build-${{ github.run_id }}
           aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Confirm AWS identity
+        run: aws sts get-caller-identity
 
       - name: Login to ECR
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Build and push backend
         run: |
-          docker build -t ${{ vars.ECR_REGISTRY }}/employee-backend:${{ steps.tag.outputs.backend_tag }} employee-app/backend/
-          docker push ${{ vars.ECR_REGISTRY }}/employee-backend:${{ steps.tag.outputs.backend_tag }}
+          docker build \
+            -t "${{ vars.ECR_REGISTRY }}/employee-backend:${{ steps.tag.outputs.backend_tag }}" \
+            employee-app/backend/
+
+          docker push \
+            "${{ vars.ECR_REGISTRY }}/employee-backend:${{ steps.tag.outputs.backend_tag }}"
 
       - name: Build and push frontend
         run: |
-          docker build -t ${{ vars.ECR_REGISTRY }}/employee-frontend:${{ steps.tag.outputs.frontend_tag }} employee-app/frontend/
-          docker push ${{ vars.ECR_REGISTRY }}/employee-frontend:${{ steps.tag.outputs.frontend_tag }}
+          docker build \
+            -t "${{ vars.ECR_REGISTRY }}/employee-frontend:${{ steps.tag.outputs.frontend_tag }}" \
+            employee-app/frontend/
+
+          docker push \
+            "${{ vars.ECR_REGISTRY }}/employee-frontend:${{ steps.tag.outputs.frontend_tag }}"
 
   deploy:
     runs-on: ubuntu-latest
     needs: [build-and-push]
     environment: ${{ github.event.inputs.environment || 'development' }}
+
+    permissions:
+      contents: write
+      id-token: write
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
 
-      - name: Configure AWS credentials
+      - name: Configure AWS credentials using OIDC
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          role-session-name: GitHubActions-Deploy-${{ github.run_id }}
           aws-region: ${{ vars.AWS_REGION }}
 
+      - name: Confirm AWS identity
+        run: aws sts get-caller-identity
+
       - name: Update kubeconfig
-        run: aws eks update-kubeconfig --name ${{ vars.EKS_CLUSTER }} --region ${{ vars.AWS_REGION }}
+        run: |
+          aws eks update-kubeconfig \
+            --name "${{ vars.EKS_CLUSTER }}" \
+            --region "${{ vars.AWS_REGION }}"
+
+      - name: Verify Kubernetes access
+        run: |
+          kubectl auth can-i get pods \
+            --namespace "${{ vars.NAMESPACE }}"
+
+          kubectl auth can-i update deployments \
+            --namespace "${{ vars.NAMESPACE }}"
 
       - name: Update image tags in values.yaml
         run: |
           sed -i "0,/tag: .*/s/tag: .*/tag: ${{ needs.build-and-push.outputs.backend_tag }}/" helm/values.yaml
           sed -i "0,/tag: ${{ needs.build-and-push.outputs.backend_tag }}/!s/tag: .*/tag: ${{ needs.build-and-push.outputs.frontend_tag }}/" helm/values.yaml
 
-      - name: Commit updated tags back to repo
+      - name: Commit updated tags back to repository
         run: |
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
-          git add helm/values.yaml
-          git commit -m "ci: update tags - backend:${{ needs.build-and-push.outputs.backend_tag }} frontend:${{ needs.build-and-push.outputs.frontend_tag }}" || true
-          git push
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-      - name: Install/Upgrade Helm release
+          git add helm/values.yaml
+
+          if git diff --cached --quiet; then
+            echo "No image-tag changes to commit."
+          else
+            git commit -m "ci: deploy backend ${{ needs.build-and-push.outputs.backend_tag }} and frontend ${{ needs.build-and-push.outputs.frontend_tag }}"
+            git push origin HEAD:${{ github.ref_name }}
+          fi
+
+      - name: Install or upgrade Helm release
         run: |
           helm upgrade --install employee-app helm/ \
-            --namespace ${{ vars.NAMESPACE }} \
+            --namespace "${{ vars.NAMESPACE }}" \
             --create-namespace \
             --wait \
             --timeout 5m
 
       - name: Verify deployment
         run: |
-          kubectl get pods -n ${{ vars.NAMESPACE }}
-          kubectl get ingress -n ${{ vars.NAMESPACE }}
+          kubectl get deployments -n "${{ vars.NAMESPACE }}"
+          kubectl get pods -n "${{ vars.NAMESPACE }}"
+          kubectl get services -n "${{ vars.NAMESPACE }}"
+          kubectl get ingress -n "${{ vars.NAMESPACE }}"
+
+          kubectl rollout status deployment/employee-app-backend \
+            -n "${{ vars.NAMESPACE }}" \
+            --timeout=180s
+
+          kubectl rollout status deployment/employee-app-frontend \
+            -n "${{ vars.NAMESPACE }}" \
+            --timeout=180s
