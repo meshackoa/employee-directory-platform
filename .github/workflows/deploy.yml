@@ -160,7 +160,7 @@ jobs:
 
       - name: Install or upgrade Helm release
         run: |
-          helm upgrade --install employee-app helm/ \
+          helm upgrade --install employee-platform helm/ \
             --namespace "${{ vars.NAMESPACE }}" \
             --create-namespace \
             --wait \
