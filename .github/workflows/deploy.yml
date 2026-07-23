@@ -173,10 +173,10 @@ jobs:
           kubectl get services -n "${{ vars.NAMESPACE }}"
           kubectl get ingress -n "${{ vars.NAMESPACE }}"
 
-          kubectl rollout status deployment/employee-app-backend \
-            -n "${{ vars.NAMESPACE }}" \
-            --timeout=180s
+          kubectl rollout status deployment/backend \
+           -n "${{ vars.NAMESPACE }}" \
+           --timeout=180s
 
-          kubectl rollout status deployment/employee-app-frontend \
+          kubectl rollout status deployment/frontend \
             -n "${{ vars.NAMESPACE }}" \
             --timeout=180s
