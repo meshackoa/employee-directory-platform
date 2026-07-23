@@ -106,14 +106,12 @@ jobs:
     environment: ${{ github.event.inputs.environment || 'development' }}
 
     permissions:
-      contents: write
+      contents: read
       id-token: write
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          ref: ${{ github.ref }}
 
       - name: Configure AWS credentials using OIDC
         uses: aws-actions/configure-aws-credentials@v4
@@ -139,30 +137,13 @@ jobs:
           kubectl auth can-i update deployments \
             --namespace "${{ vars.NAMESPACE }}"
 
-      - name: Update image tags in values.yaml
-        run: |
-          sed -i "0,/tag: .*/s/tag: .*/tag: ${{ needs.build-and-push.outputs.backend_tag }}/" helm/values.yaml
-          sed -i "0,/tag: ${{ needs.build-and-push.outputs.backend_tag }}/!s/tag: .*/tag: ${{ needs.build-and-push.outputs.frontend_tag }}/" helm/values.yaml
-
-      - name: Commit updated tags back to repository
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
-          git add helm/values.yaml
-
-          if git diff --cached --quiet; then
-            echo "No image-tag changes to commit."
-          else
-            git commit -m "ci: deploy backend ${{ needs.build-and-push.outputs.backend_tag }} and frontend ${{ needs.build-and-push.outputs.frontend_tag }}"
-            git push origin HEAD:${{ github.ref_name }}
-          fi
-
       - name: Install or upgrade Helm release
         run: |
           helm upgrade --install employee-platform helm/ \
             --namespace "${{ vars.NAMESPACE }}" \
             --create-namespace \
+            --set-string backend.tag="${{ needs.build-and-push.outputs.backend_tag }}" \
+            --set-string frontend.tag="${{ needs.build-and-push.outputs.frontend_tag }}" \
             --wait \
             --timeout 5m
 
@@ -174,8 +155,8 @@ jobs:
           kubectl get ingress -n "${{ vars.NAMESPACE }}"
 
           kubectl rollout status deployment/backend \
-           -n "${{ vars.NAMESPACE }}" \
-           --timeout=180s
+            -n "${{ vars.NAMESPACE }}" \
+            --timeout=180s
 
           kubectl rollout status deployment/frontend \
             -n "${{ vars.NAMESPACE }}" \
